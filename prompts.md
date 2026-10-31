@@ -105,6 +105,10 @@ Reescribe la spec utilizando la terminología estándar de OpenSpec:
 - Sustituye DEBE por SHALL.
 - Mantén WHEN, THEN y AND en inglés.
 - Conserva el resto del texto en español.
+
+Guarda el resultado en:
+
+docs/spec-viva/JLL.md
 ```
 
 **Qué salió:** Se generó la versión final de la spec OpenSpec utilizando SHALL como palabra clave normativa y manteniendo la estructura estándar de Requirements y Scenarios.

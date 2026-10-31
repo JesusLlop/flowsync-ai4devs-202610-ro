@@ -17,20 +17,24 @@ El sistema SHALL permitir crear una cuenta con email, contraseña y confirmació
 #### Scenario: Email ya registrado
 - **WHEN** una persona intenta registrarse con un email que ya pertenece a otra cuenta
 - **THEN** el registro se rechaza
-- **AND** junto al campo email se muestra en castellano que ese email ya está en uso
+- **AND** junto al campo email se muestra "Ese email ya está registrado. Inicia sesión en su lugar."
 
 #### Scenario: Contraseña fuera de longitud
 - **WHEN** una persona intenta registrarse con una contraseña de menos de 8 o de más de 32 caracteres
 - **THEN** el registro se rechaza
 - **AND** junto al campo contraseña se muestra un error en castellano
 
-#### Scenario: Confirmación que no coincide
-- **WHEN** una persona intenta registrarse con una confirmación distinta de la contraseña
-- **THEN** el formulario no se envía
-- **AND** se informa de que las contraseñas no coinciden
+#### Scenario: Confirmación que no coincide en el formulario
+- **WHEN** una persona rellena el formulario de registro con una confirmación distinta de la contraseña
+- **THEN** el formulario no se envía al servidor
+- **AND** junto al campo de confirmación se muestra "Las contraseñas no coinciden."
+
+#### Scenario: Confirmación que no coincide en la API
+- **WHEN** llega a la API una petición de registro con una confirmación distinta de la contraseña
+- **THEN** la API rechaza el registro
 
 ### Requirement: Inicio de sesión
-El sistema SHALL permitir iniciar sesión con email y contraseña. Ante credenciales incorrectas SHALL dar un único mensaje genérico, sin indicar cuál de los dos datos falla.
+El sistema SHALL permitir iniciar sesión con email y contraseña. Ante un email no registrado o una contraseña incorrecta SHALL dar el mismo mensaje, sin indicar cuál de los dos datos falla.
 
 #### Scenario: Credenciales correctas
 - **WHEN** una persona sin sesión envía el email y la contraseña de una cuenta existente
@@ -40,7 +44,7 @@ El sistema SHALL permitir iniciar sesión con email y contraseña. Ante credenci
 #### Scenario: Credenciales incorrectas
 - **WHEN** una persona envía un email no registrado o una contraseña incorrecta
 - **THEN** no se inicia sesión
-- **AND** se muestra el mensaje "El email o la contraseña no son correctos"
+- **AND** se muestra el mensaje "El email o la contraseña no son correctos."
 
 #### Scenario: Sesiones simultáneas
 - **WHEN** una persona con sesión abierta en un dispositivo inicia sesión en otro
@@ -67,11 +71,13 @@ El sistema SHALL mantener la sesión entre recargas y cierres del navegador, y S
 #### Scenario: Sesión rechazada por el servidor
 - **WHEN** la aplicación arranca y el servidor rechaza la sesión guardada
 - **THEN** la persona queda sin sesión
+- **AND** la sesión guardada se borra
+- **AND** en la pantalla de login se muestra "Tu sesión ha caducado. Vuelve a iniciar sesión."
 
 #### Scenario: Servidor no disponible al arrancar
 - **WHEN** la aplicación arranca y la sesión no se puede comprobar por un fallo ajeno a la autenticación
 - **THEN** la persona aparece sin sesión
-- **AND** se muestra un aviso con el error
+- **AND** en la pantalla de login se muestra un aviso con el motivo
 - **AND** la sesión guardada se conserva para reintentar al recargar
 
 ### Requirement: Cierre de sesión
@@ -84,7 +90,8 @@ El sistema SHALL permitir cerrar sesión desde el perfil. El cierre SHALL afecta
 
 #### Scenario: Fallo del servidor al cerrar sesión
 - **WHEN** una persona cierra sesión y la llamada al servidor falla
-- **THEN** la interfaz pasa igualmente a anónima
+- **THEN** la interfaz pasa igualmente a anónima, sin mostrar ningún aviso
+- **AND** la sesión de ese dispositivo sigue siendo válida en el servidor
 
 #### Scenario: Otras sesiones abiertas
 - **WHEN** una persona cierra sesión en un dispositivo y tiene otra sesión abierta en otro
@@ -111,23 +118,28 @@ El sistema SHALL impedir el acceso a pantallas y operaciones protegidas sin una 
 - **AND** al login si no la tiene
 
 ### Requirement: Permisos iguales para todas las cuentas
-El sistema SHALL dar a todas las personas registradas los mismos permisos, sin roles.
+El sistema SHALL NOT distinguir roles entre las personas registradas.
 
 #### Scenario: Sin roles
-- **WHEN** dos personas registradas cualesquiera inician sesión
-- **THEN** ambas tienen acceso a las mismas pantallas y operaciones
+- **WHEN** cualquier persona registrada inicia sesión
+- **THEN** tiene acceso a las mismas pantallas y operaciones que el resto
 
 ### Requirement: Consulta del perfil
 El sistema SHALL mostrar a la persona con sesión sus datos de cuenta y SHALL NOT mostrar ni devolver nunca su contraseña.
 
-#### Scenario: Perfil con nombre
-- **WHEN** una persona con sesión y con nombre registrado abre su perfil
-- **THEN** ve sus iniciales, su nombre, su email y la fecha de alta ("Miembro desde")
+#### Scenario: Perfil con nombre de varias palabras
+- **WHEN** una persona con sesión y con un nombre de dos o más palabras abre su perfil
+- **THEN** ve su nombre, su email y la fecha de alta ("Miembro desde")
+- **AND** sus iniciales son la primera letra de las dos primeras palabras del nombre, en mayúsculas
+
+#### Scenario: Perfil con nombre de una palabra
+- **WHEN** una persona con sesión y con un nombre de una sola palabra abre su perfil
+- **THEN** sus iniciales son las dos primeras letras del nombre, en mayúsculas
 
 #### Scenario: Perfil sin nombre
 - **WHEN** una persona con sesión y sin nombre registrado abre su perfil
 - **THEN** ve "Sin nombre" en lugar del nombre
-- **AND** las iniciales salen de su email
+- **AND** sus iniciales son la primera letra de lo que va antes de la `@` de su email y la primera de lo que va después, en mayúsculas
 
 #### Scenario: La contraseña no se expone
 - **WHEN** el sistema devuelve los datos de una cuenta en el registro, el login o el perfil
@@ -142,7 +154,7 @@ El sistema SHALL mostrar los errores de validación en castellano junto al campo
 
 #### Scenario: Sin conexión
 - **WHEN** no se puede contactar con el servidor
-- **THEN** se informa de un error de red
+- **THEN** se muestra "No se pudo conectar con el servidor. Comprueba que el backend está arrancado."
 
 ## Parte B
 
@@ -151,12 +163,13 @@ El sistema SHALL mostrar los errores de validación en castellano junto al campo
   - 15 revisados
 
 #### Incoherencias detectadas
-  - El PRD (RF-1) requiere nombre durante el registro, pero la implementación permite registrarse sin nombre.
-  - La interfaz muestra el mensaje "Tu sesión ha caducado", pero los tokens se crean sin fecha de expiración.
+  - El PRD (RF-1) requiere nombre durante el registro, pero la API exige el campo fullName mientras que la pantalla de registro permite dejarlo vacío.
+  - La interfaz muestra el mensaje "Tu sesión ha caducado. Vuelve a iniciar sesión.", pero los tokens se crean sin fecha de expiración.
   - El endpoint de logout devuelve un formato de respuesta diferente al resto de endpoints.
   - La longitud máxima de contraseña se valida durante el registro, pero no durante el login.
+  - El registro informa "Ese email ya está registrado. Inicia sesión en su lugar.", mientras que el login oculta cuál de los dos datos es incorrecto.
+  - Si falla el cierre de sesión en el servidor, la interfaz pasa a anónima, pero la sesión sigue siendo válida y no caduca.
 
 #### Comportamientos que no supiste clasificar como bug o contrato
-  - El nombre es opcional al registrarse, pero el PRD lo describe como parte del registro; no pude determinar si la implementación cambió el requisito o si el PRD quedó desactualizado.
+  - El nombre aparece como opcional en el flujo de registro, pero el PRD lo describe como obligatorio; no pude determinar si la implementación cambió el requisito o si la documentación quedó desactualizada.
   - Los tokens no caducan, pero la interfaz informa de una sesión caducada; no pude determinar si falta implementar la expiración o si el mensaje es incorrecto.
-  - El PRD indica que tras cerrar sesión no debe poder verse contenido protegido usando el botón Atrás del navegador, pero no pude determinar si realmente se cumple porque no se verificó mediante ejecución.
