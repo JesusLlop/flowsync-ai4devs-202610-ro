@@ -143,3 +143,20 @@ El sistema SHALL mostrar los errores de validación en castellano junto al campo
 #### Scenario: Sin conexión
 - **WHEN** no se puede contactar con el servidor
 - **THEN** se informa de un error de red
+
+## Parte B
+
+#### Requisitos generados y comprobados
+  - 28 escritos por el agente
+  - 15 revisados
+
+#### Incoherencias detectadas
+  - El PRD (RF-1) requiere nombre durante el registro, pero la implementación permite registrarse sin nombre.
+  - La interfaz muestra el mensaje "Tu sesión ha caducado", pero los tokens se crean sin fecha de expiración.
+  - El endpoint de logout devuelve un formato de respuesta diferente al resto de endpoints.
+  - La longitud máxima de contraseña se valida durante el registro, pero no durante el login.
+
+#### Comportamientos que no supiste clasificar como bug o contrato
+  - El nombre es opcional al registrarse, pero el PRD lo describe como parte del registro; no pude determinar si la implementación cambió el requisito o si el PRD quedó desactualizado.
+  - Los tokens no caducan, pero la interfaz informa de una sesión caducada; no pude determinar si falta implementar la expiración o si el mensaje es incorrecto.
+  - El PRD indica que tras cerrar sesión no debe poder verse contenido protegido usando el botón Atrás del navegador, pero no pude determinar si realmente se cumple porque no se verificó mediante ejecución.
